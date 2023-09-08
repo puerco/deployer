@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"sync"
 
+	purl "github.com/package-url/packageurl-go"
+
+	"github.com/puerco/deployer/pkg/probers/oci"
+
 	"github.com/puerco/deployer/pkg/deploy/options"
 	"github.com/puerco/deployer/pkg/payload"
 )
@@ -14,7 +18,7 @@ var (
 )
 
 func init() {
-
+	RegisterPackageProbe(purl.TypeOCI, oci.New())
 }
 
 func RegisterPackageProbe(purlType string, pp PackageProbe) {
