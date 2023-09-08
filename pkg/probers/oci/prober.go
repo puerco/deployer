@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	purl "github.com/package-url/packageurl-go"
 
 	"github.com/sigstore/cosign/v2/pkg/cosign"
@@ -17,8 +18,6 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-
-	intoto "github.com/in-toto/in-toto-golang/in_toto"
 
 	"github.com/puerco/deployer/pkg/deploy/options"
 	"github.com/puerco/deployer/pkg/payload"
@@ -319,4 +318,23 @@ func (di *defaultImplementation) DownloadDocuments(opts localOptions, se oci.Sig
 	}
 	// FIXME
 	return nil, nil
+}
+
+func PredicateTypeToFormat(predicateType string) payload.Format {
+	// Normalize OpenVEX to match anuy version
+	if strings.HasPrefix(predicateType, "https://openvex.dev/ns/") {
+		predicateType = "https://openvex.dev/ns/"
+	}
+	switch predicateType {
+	case intoto.PredicateCycloneDX:
+		return payload.Format("application/vnd.cyclonedx+json")
+	case intoto.PredicateSPDX:
+		return payload.Format("text/spdx+json")
+	case "https://slsa.dev/provenance/v1":
+		return payload.Format("application/vnd.slsa")
+	case "https://openvex.dev/ns/v0.2.0":
+		return payload.Format("application/vnd.slsa")
+	default:
+		return ""
+	}
 }
