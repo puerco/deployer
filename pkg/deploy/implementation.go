@@ -12,7 +12,7 @@ import (
 type probeImplementation interface {
 	ParsePurl(string) (purl.PackageURL, error)
 	GetPackageProbe(purl.PackageURL) (PackageProbe, error)
-	FetchDocuments(options.Options, PackageProbe, purl.PackageURL) ([]payload.Document, error)
+	FetchDocuments(options.Options, PackageProbe, purl.PackageURL) ([]*payload.Document, error)
 }
 
 type defaultProberImplementation struct{}
@@ -36,7 +36,7 @@ func (pi *defaultProberImplementation) GetPackageProbe(p purl.PackageURL) (Packa
 
 // FetchDocuments downloads all security documents using the PackageProbe for
 // the specified purl.
-func (pi *defaultProberImplementation) FetchDocuments(opts options.Options, pkgProbe PackageProbe, p purl.PackageURL) ([]payload.Document, error) {
+func (pi *defaultProberImplementation) FetchDocuments(opts options.Options, pkgProbe PackageProbe, p purl.PackageURL) ([]*payload.Document, error) {
 	docs, err := pkgProbe.FetchDocuments(opts, p)
 	if err != nil {
 		return nil, fmt.Errorf("fetching documents: %w", err)

@@ -40,6 +40,13 @@ func NewDocumentFromFile(path string) (*Document, error) {
 	return doc, nil
 }
 
+// NewDocumentFromBytes creates a document from an already read byte array
+func NewDocumentFromBytes(data []byte) *Document {
+	doc := NewDocument()
+	doc.SetData(data)
+	return doc
+}
+
 // ReadData takes an io.Reader r and ingests the data of the document
 // from it using Read(). Data will be kept in memory until maxInMemSize
 // bytes are read, after which data will be dumped to a temporary file.
@@ -92,6 +99,13 @@ func (d *Document) ReadData(r io.Reader) (err error) {
 	return err
 }
 
+// SetData sets the document data from a byte array already in memory
+func (d *Document) SetData(data []byte) {
+	d.Cleanup()
+	d.data = data
+	d.reader = bytes.NewReader(d.data)
+}
+
 // Read implements the reader interface to be able to use the document
 // wherever io.Reader fits
 func (d *Document) Read(b []byte) (n int, err error) {
@@ -102,6 +116,8 @@ func (d *Document) Read(b []byte) (n int, err error) {
 	return d.reader.Read(b)
 }
 
+// Seek implements the io.Seeker interface. It delegates the seek operation
+// to the backend the document is using (in memory or file on disk).
 func (d *Document) Seek(offset int64, whence int) (int64, error) {
 	if d.tmpFile != nil {
 		return d.tmpFile.Seek(offset, whence)
@@ -134,7 +150,9 @@ func (d *Document) Cleanup() {
 	os.Remove(d.tmpFile.Name())
 }
 
-// inMemory is an internal method to query the status of the data
+// inMemory is an internal method to query the status of the data. Returns
+// true when document data is handled in memory and false when relying on
+// a file on disk.
 func (d *Document) inMemory() bool {
 	return d.tmpFile == nil
 }

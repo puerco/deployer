@@ -41,7 +41,7 @@ func NewProbe() *Probe {
 
 // Fetch probes the package url using a package prober and retrieves all the
 // security documents it can find.
-func (probe *Probe) Fetch(purlString string) ([]payload.Document, error) {
+func (probe *Probe) Fetch(purlString string) ([]*payload.Document, error) {
 	p, err := probe.impl.ParsePurl(purlString)
 	if err != nil {
 		return nil, fmt.Errorf("validating purl: %w", err)

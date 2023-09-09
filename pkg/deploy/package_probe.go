@@ -8,5 +8,5 @@ import (
 )
 
 type PackageProbe interface {
-	FetchDocuments(options.Options, purl.PackageURL) ([]payload.Document, error)
+	FetchDocuments(options.Options, purl.PackageURL) ([]*payload.Document, error)
 }

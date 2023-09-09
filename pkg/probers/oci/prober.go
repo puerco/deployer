@@ -1,6 +1,7 @@
 package oci
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -10,6 +11,7 @@ import (
 
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	purl "github.com/package-url/packageurl-go"
+	"github.com/sirupsen/logrus"
 
 	"github.com/sigstore/cosign/v2/pkg/cosign"
 	"github.com/sigstore/cosign/v2/pkg/oci"
@@ -38,7 +40,7 @@ func New() *Prober {
 type ociImplementation interface {
 	PurlToReference(localOptions, purl.PackageURL) (name.Reference, error)
 	ResolveImageReference(localOptions, name.Reference) (oci.SignedEntity, error)
-	DownloadDocuments(localOptions, oci.SignedEntity) ([]payload.Document, error)
+	DownloadDocuments(localOptions, oci.SignedEntity) ([]*payload.Document, error)
 }
 
 type defaultImplementation struct{}
@@ -64,7 +66,7 @@ func (pl *platformList) String() string {
 
 // FetchDocuments implements the logic to search for documents associated with
 // a container image
-func (prober *Prober) FetchDocuments(opts options.Options, p purl.PackageURL) ([]payload.Document, error) {
+func (prober *Prober) FetchDocuments(opts options.Options, p purl.PackageURL) ([]*payload.Document, error) {
 	ref, err := prober.impl.PurlToReference(prober.Options, p)
 	if err != nil {
 		return nil, fmt.Errorf("translating purl to image reference: %w", err)
@@ -272,7 +274,7 @@ func matchPlatform(base *v1.Platform, list platformList) platformList {
 }
 
 // DownloadDocuments retrieves attested or attached document from the registry
-func (di *defaultImplementation) DownloadDocuments(opts localOptions, se oci.SignedEntity) ([]payload.Document, error) {
+func (di *defaultImplementation) DownloadDocuments(opts localOptions, se oci.SignedEntity) ([]*payload.Document, error) {
 	//	ctx := context.Background()
 
 	/*
@@ -283,6 +285,8 @@ func (di *defaultImplementation) DownloadDocuments(opts localOptions, se oci.Sig
 	*/
 	// ociremoteOpts := []ociremote.Option{}
 
+	docs := []*payload.Document{}
+
 	// Fetch all the attestations from the registry
 	attestations, err := cosign.FetchAttestations(se, "")
 	if err != nil {
@@ -290,34 +294,42 @@ func (di *defaultImplementation) DownloadDocuments(opts localOptions, se oci.Sig
 	}
 
 	for _, att := range attestations {
-		// We only understand intoto attestations for now
-		if att.PayloadType != types.IntotoPayloadType { // {  "application/vnd.in-toto+json" {
+		// We only understand intoto attestations for now.
+		if att.PayloadType != types.IntotoPayloadType {
 			continue
 		}
 
-		payload, err := base64.StdEncoding.DecodeString(att.PayLoad)
+		pload, err := base64.StdEncoding.DecodeString(att.PayLoad)
 		if err != nil {
 			return nil, fmt.Errorf("decoding document: %w", err)
 		}
 
 		statement := intoto.Statement{}
-		if err := json.Unmarshal(payload, &statement); err != nil {
+		if err := json.Unmarshal(pload, &statement); err != nil {
 			return nil, fmt.Errorf("unmarshalling attestation: %w", err)
 		}
 
-		fmt.Printf("Type: %s\n", statement.PredicateType)
+		// If we're dealing with a document type we don't know
+		// skip it at this point
+		format := PredicateTypeToFormat(statement.PredicateType)
+		if format == "" {
+			logrus.Warnf("ignoring attached document of type %s", statement.PredicateType)
+			continue
+		}
+
+		logrus.Infof("Document Format: %s\n", format)
 		encoder := json.NewEncoder(os.Stdout)
 		encoder.SetIndent("", "    ")
-		err = encoder.Encode(statement.Predicate)
-		// data, err := json.Marshal(statement.Predicate)
-		if err != nil {
+		data := []byte{}
+		b := bytes.NewBuffer(data)
+		if err := encoder.Encode(b); err != nil {
 			return nil, fmt.Errorf("marshaling: %w", err)
 		}
-		// fmt.Println(statement.Predicate)
-		// fmt.Println(string(data))
+		docs = append(docs, payload.NewDocumentFromBytes(data))
 	}
+
 	// FIXME
-	return nil, nil
+	return docs, nil
 }
 
 func PredicateTypeToFormat(predicateType string) payload.Format {
