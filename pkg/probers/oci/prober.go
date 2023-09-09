@@ -39,6 +39,7 @@ func New() *Prober {
 }
 
 type ociImplementation interface {
+	VerifyOptions(*options.Options) error
 	PurlToReference(options.Options, purl.PackageURL) (name.Reference, error)
 	ResolveImageReference(options.Options, name.Reference) (oci.SignedEntity, error)
 	DownloadDocuments(options.Options, oci.SignedEntity) ([]*payload.Document, error)
@@ -68,6 +69,9 @@ func (pl *platformList) String() string {
 // FetchDocuments implements the logic to search for documents associated with
 // a container image
 func (prober *Prober) FetchDocuments(opts options.Options, p purl.PackageURL) ([]*payload.Document, error) {
+	if err := prober.impl.VerifyOptions(&prober.Options); err != nil {
+		return nil, fmt.Errorf("verifying options: %w", err)
+	}
 	ref, err := prober.impl.PurlToReference(prober.Options, p)
 	if err != nil {
 		return nil, fmt.Errorf("translating purl to image reference: %w", err)
@@ -333,4 +337,12 @@ func (di *defaultImplementation) DownloadDocuments(opts options.Options, se oci.
 	}
 
 	return docs, nil
+}
+
+// VerifyOptions checks the options and returns an error if there is something wrong
+func (di *defaultImplementation) VerifyOptions(opts *options.Options) error {
+	if _, ok := opts.ProberOptions[purl.TypeOCI]; !ok {
+		opts.ProberOptions[purl.TypeOCI] = localOptions{}
+	}
+	return nil
 }
