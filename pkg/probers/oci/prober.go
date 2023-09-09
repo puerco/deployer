@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
@@ -191,7 +190,6 @@ func (di *defaultImplementation) ResolveImageReference(opts localOptions, ref na
 		ociremoteOpts = append(ociremoteOpts, ociremote.WithTargetRepository(targetRepoOverride))
 	}
 
-	// fmt.Fprintf(os.Stdout, "testing %s\n", ref)
 	se, err := ociremote.SignedEntity(ref, ociremoteOpts...)
 	if err != nil {
 		return nil, err
@@ -317,15 +315,19 @@ func (di *defaultImplementation) DownloadDocuments(opts localOptions, se oci.Sig
 			continue
 		}
 
-		logrus.Infof("Document Format: %s\n", format)
-		encoder := json.NewEncoder(os.Stdout)
+		b := new(bytes.Buffer)
+		encoder := json.NewEncoder(b)
 		encoder.SetIndent("", "    ")
-		data := []byte{}
-		b := bytes.NewBuffer(data)
-		if err := encoder.Encode(b); err != nil {
+
+		// Encode the document body
+		if err := encoder.Encode(statement.Predicate); err != nil {
 			return nil, fmt.Errorf("marshaling: %w", err)
 		}
-		docs = append(docs, payload.NewDocumentFromBytes(data))
+
+		doc := payload.NewDocument()
+		doc.ReadData(b)
+		doc.Format = format
+		docs = append(docs, doc)
 	}
 
 	// FIXME
@@ -343,9 +345,9 @@ func PredicateTypeToFormat(predicateType string) payload.Format {
 	case intoto.PredicateSPDX:
 		return payload.Format("text/spdx+json")
 	case "https://slsa.dev/provenance/v1":
-		return payload.Format("application/vnd.slsa")
-	case "https://openvex.dev/ns/v0.2.0":
-		return payload.Format("application/vnd.slsa")
+		return payload.Format("application/vnd.slsa+json")
+	case "https://openvex.dev/ns/":
+		return payload.Format("application/vnd.openvex+json")
 	default:
 		return ""
 	}
