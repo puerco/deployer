@@ -5,8 +5,10 @@ go 1.20
 require (
 	github.com/google/go-containerregistry v0.16.1
 	github.com/in-toto/in-toto-golang v0.9.0
+	github.com/openvex/go-vex v0.2.5
 	github.com/package-url/packageurl-go v0.1.1
 	github.com/sigstore/cosign/v2 v2.2.0
+	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
 )
 
@@ -68,7 +70,6 @@ require (
 	github.com/sigstore/rekor v1.2.2 // indirect
 	github.com/sigstore/sigstore v1.7.2 // indirect
 	github.com/sigstore/timestamp-authority v1.1.2 // indirect
-	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/afero v1.9.5 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/spf13/cobra v1.7.0 // indirect
