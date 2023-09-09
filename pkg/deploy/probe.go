@@ -27,11 +27,14 @@ func RegisterPackageProbe(purlType string, pp PackageProbe) {
 	regMtx.Unlock()
 }
 
+// Probe is the main object that inspects repositories and looks for security
+// documents. To create a new Probe use the `NewProbe` function
 type Probe struct {
 	impl    probeImplementation
 	Options options.Options
 }
 
+// NewProbe creates a new deployer probe
 func NewProbe() *Probe {
 	return &Probe{
 		impl:    &defaultProberImplementation{},

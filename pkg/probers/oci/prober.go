@@ -25,21 +25,23 @@ import (
 )
 
 type Prober struct {
-	Options localOptions
+	Options options.Options
 	impl    ociImplementation
 }
 
 func New() *Prober {
-	return &Prober{
+	p := &Prober{
 		impl:    &defaultImplementation{},
-		Options: localOptions{},
+		Options: options.Default,
 	}
+	p.Options.ProberOptions["oci"] = localOptions{}
+	return p
 }
 
 type ociImplementation interface {
-	PurlToReference(localOptions, purl.PackageURL) (name.Reference, error)
-	ResolveImageReference(localOptions, name.Reference) (oci.SignedEntity, error)
-	DownloadDocuments(localOptions, oci.SignedEntity) ([]*payload.Document, error)
+	PurlToReference(options.Options, purl.PackageURL) (name.Reference, error)
+	ResolveImageReference(options.Options, name.Reference) (oci.SignedEntity, error)
+	DownloadDocuments(options.Options, oci.SignedEntity) ([]*payload.Document, error)
 }
 
 type defaultImplementation struct{}
@@ -90,7 +92,7 @@ func (prober *Prober) FetchDocuments(opts options.Options, p purl.PackageURL) ([
 
 // PurlToReference reads a purl and generates an image reference. It uses GGCR's
 // name package to parse it and returns the reference.
-func (di *defaultImplementation) PurlToReference(opts localOptions, p purl.PackageURL) (name.Reference, error) {
+func (di *defaultImplementation) PurlToReference(opts options.Options, p purl.PackageURL) (name.Reference, error) {
 	refString, err := purlToRefString(opts, p)
 	if err != nil {
 		return nil, err
@@ -105,7 +107,7 @@ func (di *defaultImplementation) PurlToReference(opts localOptions, p purl.Packa
 }
 
 // purlToRefString returns an OCI reference from an OCI purl
-func purlToRefString(opts localOptions, p purl.PackageURL) (string, error) {
+func purlToRefString(opts options.Options, p purl.PackageURL) (string, error) {
 	if p.Type != purl.TypeOCI {
 		return "", errors.New("package URL is not of type OCI")
 	}
@@ -121,16 +123,16 @@ func purlToRefString(opts localOptions, p purl.PackageURL) (string, error) {
 		refString = fmt.Sprintf(
 			"%s/%s", strings.TrimSuffix(qualifiers["repository_url"], "/"), p.Name,
 		)
-	} else if opts.Repository != "" {
+	} else if opts.ProberOptions["oci"].(localOptions).Repository != "" {
 		refString = fmt.Sprintf(
-			"%s/%s", strings.TrimSuffix(opts.Repository, "/"), p.Name,
+			"%s/%s", strings.TrimSuffix(opts.ProberOptions["oci"].(localOptions).Repository, "/"), p.Name,
 		)
 	}
 
 	// Of a repo override is set, rewrite the ref
-	if opts.RepositoryOverride != "" {
+	if opts.ProberOptions["oci"].(localOptions).RepositoryOverride != "" {
 		refString = fmt.Sprintf(
-			"%s/%s", strings.TrimSuffix(opts.RepositoryOverride, "/"), p.Name,
+			"%s/%s", strings.TrimSuffix(opts.ProberOptions["oci"].(localOptions).RepositoryOverride, "/"), p.Name,
 		)
 	}
 
@@ -169,7 +171,7 @@ func getIndexPlatforms(idx oci.SignedImageIndex) (platformList, error) {
 // ResolveImageReference takes an image ref returns the image it is pointing to.
 // This process involves checking if the image is an index, a single or multi arch
 // image, if we have an archi in options, etc, etc.
-func (di *defaultImplementation) ResolveImageReference(opts localOptions, ref name.Reference) (oci.SignedEntity, error) {
+func (di *defaultImplementation) ResolveImageReference(opts options.Options, ref name.Reference) (oci.SignedEntity, error) {
 	// o := options.RegistryOptions{}
 	// ctx := context.Background()
 
@@ -198,12 +200,12 @@ func (di *defaultImplementation) ResolveImageReference(opts localOptions, ref na
 	idx, isIndex := se.(oci.SignedImageIndex)
 
 	// We only allow --platform on multiarch indexes
-	if opts.Platform != "" && !isIndex {
+	if opts.ProberOptions["oci"].(localOptions).Platform != "" && !isIndex {
 		return nil, fmt.Errorf("specified reference is not a multiarch image")
 	}
 
-	if opts.Platform != "" && isIndex {
-		targetPlatform, err := v1.ParsePlatform(opts.Platform)
+	if opts.ProberOptions["oci"].(localOptions).Platform != "" && isIndex {
+		targetPlatform, err := v1.ParsePlatform(opts.ProberOptions["oci"].(localOptions).Platform)
 		if err != nil {
 			return nil, fmt.Errorf("parsing platform: %w", err)
 		}
@@ -272,7 +274,7 @@ func matchPlatform(base *v1.Platform, list platformList) platformList {
 }
 
 // DownloadDocuments retrieves attested or attached document from the registry
-func (di *defaultImplementation) DownloadDocuments(opts localOptions, se oci.SignedEntity) ([]*payload.Document, error) {
+func (di *defaultImplementation) DownloadDocuments(opts options.Options, se oci.SignedEntity) ([]*payload.Document, error) {
 	//	ctx := context.Background()
 
 	/*
@@ -330,6 +332,5 @@ func (di *defaultImplementation) DownloadDocuments(opts localOptions, se oci.Sig
 		docs = append(docs, doc)
 	}
 
-	// FIXME
 	return docs, nil
 }

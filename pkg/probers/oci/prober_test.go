@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	purl "github.com/package-url/packageurl-go"
+	"github.com/puerco/deployer/pkg/deploy/options"
 	"github.com/stretchr/testify/require"
 )
 
@@ -67,7 +68,9 @@ func TestPurlToRefString(t *testing.T) {
 		if !tc.mustError {
 			require.NoError(t, err, n)
 		}
-		ref, err := purlToRefString(tc.options, p)
+		opts := options.Default
+		opts.ProberOptions["oci"] = tc.options
+		ref, err := purlToRefString(opts, p)
 		if tc.mustError {
 			require.Error(t, err, n)
 			continue

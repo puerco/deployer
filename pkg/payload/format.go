@@ -22,7 +22,7 @@ func (fl *FormatsList) Has(q string) bool {
 	return false
 }
 
-var List = FormatsList{
+var AllFormats = FormatsList{
 	"application/vnd.cyclonedx",
 	"text/spdx",
 	"application/vnd.slsa",
