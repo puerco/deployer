@@ -11,7 +11,7 @@ import (
 
 type probeImplementation interface {
 	ParsePurl(string) (purl.PackageURL, error)
-	GetPackageProbe(purl.PackageURL) (PackageProbe, error)
+	GetPackageProbe(options.Options, purl.PackageURL) (PackageProbe, error)
 	FetchDocuments(options.Options, PackageProbe, purl.PackageURL) ([]*payload.Document, error)
 }
 
@@ -27,8 +27,9 @@ func (pi *defaultProberImplementation) ParsePurl(purlString string) (p purl.Pack
 }
 
 // GetPackageProbe returns a PackageProbe for the specified purl type
-func (pi *defaultProberImplementation) GetPackageProbe(p purl.PackageURL) (PackageProbe, error) {
+func (pi *defaultProberImplementation) GetPackageProbe(opts options.Options, p purl.PackageURL) (PackageProbe, error) {
 	if p, ok := probers[p.Type]; ok {
+		p.SetOptions(opts)
 		return p, nil
 	}
 	return nil, fmt.Errorf("purl type %s not supported", p.Type)

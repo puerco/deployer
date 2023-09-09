@@ -50,7 +50,7 @@ func (probe *Probe) Fetch(purlString string) ([]*payload.Document, error) {
 		return nil, fmt.Errorf("validating purl: %w", err)
 	}
 
-	pkgProbe, err := probe.impl.GetPackageProbe(p)
+	pkgProbe, err := probe.impl.GetPackageProbe(probe.Options, p)
 	if err != nil {
 		return nil, fmt.Errorf("getting package probe for purl type %s: %w", p.Type, err)
 	}

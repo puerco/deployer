@@ -72,6 +72,7 @@ func (prober *Prober) FetchDocuments(opts options.Options, p purl.PackageURL) ([
 	if err := prober.impl.VerifyOptions(&prober.Options); err != nil {
 		return nil, fmt.Errorf("verifying options: %w", err)
 	}
+
 	ref, err := prober.impl.PurlToReference(prober.Options, p)
 	if err != nil {
 		return nil, fmt.Errorf("translating purl to image reference: %w", err)
@@ -347,8 +348,16 @@ func (di *defaultImplementation) DownloadDocuments(opts options.Options, se oci.
 
 // VerifyOptions checks the options and returns an error if there is something wrong
 func (di *defaultImplementation) VerifyOptions(opts *options.Options) error {
+	if opts.ProberOptions == nil {
+		opts.ProberOptions = map[string]interface{}{}
+	}
 	if _, ok := opts.ProberOptions[purl.TypeOCI]; !ok {
 		opts.ProberOptions[purl.TypeOCI] = localOptions{}
 	}
 	return nil
+}
+
+// SetOptions sets the probe's options
+func (prober *Prober) SetOptions(opts options.Options) {
+	prober.Options = opts
 }
