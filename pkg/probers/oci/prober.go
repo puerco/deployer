@@ -291,7 +291,8 @@ func (di *defaultImplementation) DownloadDocuments(opts options.Options, se oci.
 
 	docs := []*payload.Document{}
 
-	// Fetch all the attestations from the registry
+	// Fetch all the attestations from the registry, we'll decide which ones
+	// we want using the types in the options
 	attestations, err := cosign.FetchAttestations(se, "")
 	if err != nil {
 		return nil, fmt.Errorf("fetching attestations: %w", err)
@@ -317,6 +318,11 @@ func (di *defaultImplementation) DownloadDocuments(opts options.Options, se oci.
 		// skip it at this point
 		format := payload.NewFormatFromIntotoPredicate(statement.PredicateType)
 		if format == "" {
+			logrus.Warnf("ignoring attached document of unsupported type %s", statement.PredicateType)
+			continue
+		}
+
+		if !opts.Formats.Has(format) {
 			logrus.Warnf("ignoring attached document of type %s", statement.PredicateType)
 			continue
 		}
@@ -327,7 +333,7 @@ func (di *defaultImplementation) DownloadDocuments(opts options.Options, se oci.
 
 		// Encode the document body
 		if err := encoder.Encode(statement.Predicate); err != nil {
-			return nil, fmt.Errorf("marshaling: %w", err)
+			return nil, fmt.Errorf("marshaling predicate: %w", err)
 		}
 
 		doc := payload.NewDocument()

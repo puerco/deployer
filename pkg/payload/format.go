@@ -11,10 +11,8 @@ import (
 type FormatsList []Format
 
 // Has returns a bool flagging if the FormatsList includes format q
-func (fl *FormatsList) Has(q string) bool {
-	testFormat := Format(q)
-
-	for _, f := range *fl {
+func (fl *FormatsList) Has(f Format) bool {
+	for _, testFormat := range *fl {
 		if f.MimeType() == testFormat.MimeType() {
 			return true
 		}
