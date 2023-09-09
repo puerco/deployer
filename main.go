@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/puerco/deployer/pkg/deploy"
+	"github.com/sirupsen/logrus"
 )
 
 // This program is a development sample. It is intended for
@@ -20,5 +22,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("%+v", docs)
+	for _, d := range docs {
+		logrus.Infof("Document of type %s\n", d.Format)
+		b, _ := io.ReadAll(d)
+		fmt.Print(string(b))
+	}
+
+	// fmt.Printf("%+v", docs)
 }
