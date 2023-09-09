@@ -29,9 +29,14 @@ var List = FormatsList{
 	"application/vnd.openvex",
 }
 
-// Format indicates the mime type of a document
+// Format captures a format string that indicates the types of documents handled
+// by deployer.
 type Format string
 
+// Parse looks at the format string and extracts its main components:
+//   - Plain MIME type
+//   - Version
+//   - Encoding (json, xml, etc)
 func (f Format) Parse() map[string]string {
 	str := strings.TrimSpace(string(f))
 	version := ""

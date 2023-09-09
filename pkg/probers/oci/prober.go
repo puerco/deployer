@@ -309,7 +309,7 @@ func (di *defaultImplementation) DownloadDocuments(opts localOptions, se oci.Sig
 
 		// If we're dealing with a document type we don't know
 		// skip it at this point
-		format := PredicateTypeToFormat(statement.PredicateType)
+		format := payload.NewFormatFromIntotoPredicate(statement.PredicateType)
 		if format == "" {
 			logrus.Warnf("ignoring attached document of type %s", statement.PredicateType)
 			continue
@@ -332,23 +332,4 @@ func (di *defaultImplementation) DownloadDocuments(opts localOptions, se oci.Sig
 
 	// FIXME
 	return docs, nil
-}
-
-func PredicateTypeToFormat(predicateType string) payload.Format {
-	// Normalize OpenVEX to match anuy version
-	if strings.HasPrefix(predicateType, "https://openvex.dev/ns/") {
-		predicateType = "https://openvex.dev/ns/"
-	}
-	switch predicateType {
-	case intoto.PredicateCycloneDX:
-		return payload.Format("application/vnd.cyclonedx+json")
-	case intoto.PredicateSPDX:
-		return payload.Format("text/spdx+json")
-	case "https://slsa.dev/provenance/v1":
-		return payload.Format("application/vnd.slsa+json")
-	case "https://openvex.dev/ns/":
-		return payload.Format("application/vnd.openvex+json")
-	default:
-		return ""
-	}
 }
