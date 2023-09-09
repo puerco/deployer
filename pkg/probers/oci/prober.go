@@ -34,7 +34,7 @@ func New() *Prober {
 		impl:    &defaultImplementation{},
 		Options: options.Default,
 	}
-	p.Options.ProberOptions["oci"] = localOptions{}
+	p.Options.ProberOptions[purl.TypeOCI] = localOptions{}
 	return p
 }
 
@@ -123,16 +123,16 @@ func purlToRefString(opts options.Options, p purl.PackageURL) (string, error) {
 		refString = fmt.Sprintf(
 			"%s/%s", strings.TrimSuffix(qualifiers["repository_url"], "/"), p.Name,
 		)
-	} else if opts.ProberOptions["oci"].(localOptions).Repository != "" {
+	} else if opts.ProberOptions[purl.TypeOCI].(localOptions).Repository != "" {
 		refString = fmt.Sprintf(
-			"%s/%s", strings.TrimSuffix(opts.ProberOptions["oci"].(localOptions).Repository, "/"), p.Name,
+			"%s/%s", strings.TrimSuffix(opts.ProberOptions[purl.TypeOCI].(localOptions).Repository, "/"), p.Name,
 		)
 	}
 
 	// Of a repo override is set, rewrite the ref
-	if opts.ProberOptions["oci"].(localOptions).RepositoryOverride != "" {
+	if opts.ProberOptions[purl.TypeOCI].(localOptions).RepositoryOverride != "" {
 		refString = fmt.Sprintf(
-			"%s/%s", strings.TrimSuffix(opts.ProberOptions["oci"].(localOptions).RepositoryOverride, "/"), p.Name,
+			"%s/%s", strings.TrimSuffix(opts.ProberOptions[purl.TypeOCI].(localOptions).RepositoryOverride, "/"), p.Name,
 		)
 	}
 
@@ -200,12 +200,12 @@ func (di *defaultImplementation) ResolveImageReference(opts options.Options, ref
 	idx, isIndex := se.(oci.SignedImageIndex)
 
 	// We only allow --platform on multiarch indexes
-	if opts.ProberOptions["oci"].(localOptions).Platform != "" && !isIndex {
+	if opts.ProberOptions[purl.TypeOCI].(localOptions).Platform != "" && !isIndex {
 		return nil, fmt.Errorf("specified reference is not a multiarch image")
 	}
 
-	if opts.ProberOptions["oci"].(localOptions).Platform != "" && isIndex {
-		targetPlatform, err := v1.ParsePlatform(opts.ProberOptions["oci"].(localOptions).Platform)
+	if opts.ProberOptions[purl.TypeOCI].(localOptions).Platform != "" && isIndex {
+		targetPlatform, err := v1.ParsePlatform(opts.ProberOptions[purl.TypeOCI].(localOptions).Platform)
 		if err != nil {
 			return nil, fmt.Errorf("parsing platform: %w", err)
 		}

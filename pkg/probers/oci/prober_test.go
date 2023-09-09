@@ -69,7 +69,7 @@ func TestPurlToRefString(t *testing.T) {
 			require.NoError(t, err, n)
 		}
 		opts := options.Default
-		opts.ProberOptions["oci"] = tc.options
+		opts.ProberOptions[purl.TypeOCI] = tc.options
 		ref, err := purlToRefString(opts, p)
 		if tc.mustError {
 			require.Error(t, err, n)
